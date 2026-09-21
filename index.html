@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Absensi Sekolah Profesional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- Header & Navigasi -->
+    <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <img id="logo-kab-header" src="" alt="Logo Kab" class="w-10 h-10 object-contain hidden">
+                <div class="text-center">
+                    <h1 id="header-school-name" class="text-base md:text-lg font-bold tracking-tight">SMA NEGERI 1 NUSANTARA</h1>
+                    <p class="text-[10px] text-indigo-300">Sistem Absensi & Notifikasi Otomatis Orang Tua</p>
+                </div>
+                <img id="logo-sch-header" src="" alt="Logo Sekolah" class="w-10 h-10 object-contain hidden">
+            </div>
+            
+            <!-- Tombol Menu Navigasi -->
+            <div class="flex items-center space-x-2">
+                <span id="current-time" class="hidden md:inline-block bg-indigo-950 px-3 py-1.5 rounded-lg text-xs font-mono text-indigo-200 border border-indigo-800"></span>
+                <a href="index.html" class="bg-indigo-700 hover:bg-indigo-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">Dashboard</a>
+                <a href="login.html" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span>Login Admin</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+        
+        <!-- Statistik Realtime -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <p class="text-xs font-bold text-slate-400 uppercase">Total Siswa</p>
+                <h3 id="stat-total" class="text-2xl font-black text-slate-900 mt-1">0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <p class="text-xs font-bold text-slate-400 uppercase">Sudah Absen Masuk</p>
+                <h3 id="stat-hadir" class="text-2xl font-black text-emerald-600 mt-1">0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <p class="text-xs font-bold text-slate-400 uppercase">Belum Absen</p>
+                <h3 id="stat-belum" class="text-2xl font-black text-amber-500 mt-1">0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <p class="text-xs font-bold text-slate-400 uppercase">Jam Masuk / Pulang</p>
+                <h3 class="text-sm font-bold text-indigo-600 mt-1"><span id="jam-masuk-lbl">07:00</span> - <span id="jam-pulang-lbl">15:00</span></h3>
+            </div>
+        </div>
+
+        <!-- Pilihan Tombol Absen & Barcode Scanner -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 border-b border-slate-100 gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                            <i class="fa-solid fa-camera text-indigo-600"></i>
+                            <span>Terminal Pemindai Barcode / NISN</span>
+                        </h2>
+                        <p class="text-xs text-slate-500">Pilih mode absensi lalu scan kartu atau masukkan NISN siswa.</p>
+                    </div>
+                    <!-- 2 Tombol Absen Masuk & Pulang -->
+                    <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+                        <button id="btn-mode-masuk" onclick="setMode('masuk')" class="px-4 py-2 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow-sm flex items-center space-x-1.5">
+                            <i class="fa-solid fa-right-to-bracket"></i>
+                            <span>ABSEN MASUK</span>
+                        </button>
+                        <button id="btn-mode-pulang" onclick="setMode('pulang')" class="px-4 py-2 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900 flex items-center space-x-1.5">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                            <span>ABSEN PULANG</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Area Kamera / Scanner -->
+                <div class="relative bg-slate-900 rounded-xl overflow-hidden shadow-inner flex flex-col items-center justify-center min-h-[260px]">
+                    <div id="reader" class="w-full max-w-sm"></div>
+                    <div id="scanner-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-6 text-center pointer-events-none">
+                        <i class="fa-solid fa-barcode text-5xl mb-2 text-indigo-400 animate-pulse"></i>
+                        <p class="text-xs font-medium">Kamera aktif memindai barcode...</p>
+                    </div>
+                </div>
+
+                <!-- Input Manual NISN -->
+                <form onsubmit="handleManualScan(event)" class="flex gap-3">
+                    <input type="text" id="manual-nisn" placeholder="Atau ketik/scan NISN siswa di sini..." class="flex-grow px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl text-sm transition shadow-sm">
+                        Kirim
+                    </button>
+                </form>
+            </div>
+
+            <!-- Log Aktivitas Kehadiran Realtime -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col h-[450px]">
+                <h3 class="font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center space-x-2">
+                    <i class="fa-solid fa-bell text-amber-500"></i>
+                    <span>Log Kehadiran Hari Ini</span>
+                </h3>
+                <div id="activity-log" class="overflow-y-auto flex-grow space-y-3 pt-3 pr-1">
+                    <div class="text-center py-12 text-slate-400 text-xs">Belum ada data absensi hari ini.</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+        <p id="footer-school-text">&copy; 2026 Sistem Absensi Sekolah Terpadu.</p>
+    </footer>
+
+    <script>
+        let currentMode = 'masuk';
+        let students = JSON.parse(localStorage.getItem('db_students')) || [];
+        let attendance = JSON.parse(localStorage.getItem('db_attendance')) || [];
+        let config = JSON.parse(localStorage.getItem('db_config')) || { schoolName: "SMA NEGERI 1 NUSANTARA", logoKab: "", logoSch: "", jamMasuk: "07:00", jamPulang: "15:00" };
+
+        // Muat Pengaturan Header
+        document.getElementById('header-school-name').innerText = config.schoolName;
+        document.getElementById('footer-school-text').innerText = `© 2026 ${config.schoolName}. All rights reserved.`;
+        document.getElementById('jam-masuk-lbl').innerText = config.jamMasuk;
+        document.getElementById('jam-pulang-lbl').innerText = config.jamPulang;
+
+        if(config.logoKab) {
+            const lKab = document.getElementById('logo-kab-header');
+            lKab.src = config.logoKab; lKab.classList.remove('hidden');
+        }
+        if(config.logoSch) {
+            const lSch = document.getElementById('logo-sch-header');
+            lSch.src = config.logoSch; lSch.classList.remove('hidden');
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' | ' + now.toLocaleTimeString('id-ID');
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('btn-mode-masuk').className = mode === 'masuk' ? "px-4 py-2 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow-sm flex items-center space-x-1.5" : "px-4 py-2 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900 flex items-center space-x-1.5";
+            document.getElementById('btn-mode-pulang').className = mode === 'pulang' ? "px-4 py-2 rounded-lg text-xs font-bold transition bg-indigo-600 text-white shadow-sm flex items-center space-x-1.5" : "px-4 py-2 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900 flex items-center space-x-1.5";
+        }
+
+        function updateStats() {
+            const today = new Date().toISOString().split('T')[0];
+            const todayLogs = attendance.filter(i => i.date === today && i.type === 'masuk');
+            document.getElementById('stat-total').innerText = students.length;
+            document.getElementById('stat-hadir').innerText = todayLogs.length;
+            document.getElementById('stat-belum').innerText = Math.max(0, students.length - todayLogs.length);
+        }
+
+        function processAttendance(nisn) {
+            nisn = nisn.trim();
+            const student = students.find(s => s.nisn === nisn);
+            const today = new Date().toISOString().split('T')[0];
+            const timeNow = new Date().toLocaleTimeString('id-ID');
+
+            if(!student) {
+                Swal.fire({ icon: 'error', title: 'Siswa Tidak Ditemukan', text: `NISN ${nisn} tidak terdaftar dalam sistem.` });
+                return;
+            }
+
+            const existing = attendance.find(i => i.nisn === nisn && i.date === today && i.type === currentMode);
+            if(existing) {
+                Swal.fire({ icon: 'warning', title: 'Sudah Absen', text: `${student.nama} sudah melakukan absen ${currentMode.toUpperCase()} hari ini.` });
+                return;
+            }
+
+            const record = { id: Date.now(), nisn: student.nisn, nama: student.nama, kelas: student.kelas, jurusan: student.jurusan, type: currentMode, time: timeNow, date: today, wa: student.wa };
+            attendance.unshift(record);
+            localStorage.setItem('db_attendance', JSON.stringify(attendance));
+            updateStats();
+            renderLog();
+
+            Swal.fire({
+                icon: 'success',
+                title: `Absen ${currentMode.toUpperCase()} Berhasil!`,
+                html: `<b>${student.nama}</b> (${student.kelas} - ${student.jurusan})<br>Waktu: ${timeNow}<br><br><span class="text-xs text-emerald-600 font-semibold"><i class="fa-solid fa-paper-plane"></i> Notifikasi WhatsApp & Email terkirim ke Orang Tua (${student.wa}).</span>`,
+                timer: 3500, showConfirmButton: false
+            });
+        }
+
+        function handleManualScan(e) {
+            e.preventDefault();
+            const input = document.getElementById('manual-nisn');
+            if(input.value) { processAttendance(input.value); input.value = ''; }
+        }
+
+        function renderLog() {
+            const container = document.getElementById('activity-log');
+            const today = new Date().toISOString().split('T')[0];
+            const todayLogs = attendance.filter(i => i.date === today);
+
+            if(todayLogs.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-slate-400 text-xs">Belum ada data absensi hari ini.</div>`;
+                return;
+            }
+
+            container.innerHTML = todayLogs.map(log => `
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-slate-900">${log.nama}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${log.type === 'masuk' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'} uppercase">${log.type}</span>
+                        </div>
+                        <p class="text-slate-500 text-[11px] mt-0.5">${log.kelas} - ${log.jurusan}</p>
+                    </div>
+                    <div class="text-right font-mono">
+                        <span class="font-semibold text-slate-700">${log.time}</span>
+                        <div class="text-[10px] text-emerald-600 mt-0.5"><i class="fa-solid fa-check-double"></i> Terkirim</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        try {
+            const scanner = new Html5Qrcode("reader");
+            scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 220, height: 220 } }, (decodedText) => { processAttendance(decodedText); });
+        } catch(e) {}
+
+        updateStats();
+        renderLog();
+    </script>
+</body>
+</html>
