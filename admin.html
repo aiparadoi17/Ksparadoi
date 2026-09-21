@@ -209,7 +209,7 @@
         function logout() { localStorage.removeItem('is_admin'); window.location.href = 'login.html'; }
 
         // GANTI URL DI BAWAH INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
-        const GOOGLE_SCRIPT_URL = "MASUKKAN_URL_GOOGLE_APPS_SCRIPT_DI_SINI";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzzHEAnH6Gyrn5y1HgCYB-yigqiV7zWG_2w8WVaTWwM8NKD9HpL0osnQ_N3tx3xHxpz/exec";
 
         let students = JSON.parse(localStorage.getItem('db_students')) || [];
         let attendance = JSON.parse(localStorage.getItem('db_attendance')) || [];
